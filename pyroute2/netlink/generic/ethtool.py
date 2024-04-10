@@ -28,6 +28,8 @@ ETHTOOL_MSG_PRIVFLAGS_GET = 13
 ETHTOOL_MSG_PRIVFLAGS_SET = 14
 ETHTOOL_MSG_RINGS_GET = 15
 ETHTOOL_MSG_RINGS_SET = 16
+ETHTOOL_MSG_PSE_GET = 36
+ETHTOOL_MSG_PSE_SET = 37
 
 
 class ethtoolheader(nla):
@@ -184,6 +186,19 @@ class ethtool_rings_msg(genlmsg):
 
     ethtoolheader = ethtoolheader
 
+class ethtool_pse_msg(genlmsg):
+    nla_map = (
+	('ETHTOOL_A_PSE_UNSPEC', 'none'),
+	('ETHTOOL_A_PSE_HEADER', 'ethtoolheader'),
+	('ETHTOOL_A_PODL_PSE_ADMIN_STATE', 'uint32'),
+	('ETHTOOL_A_PODL_PSE_ADMIN_CONTROL', 'uint32'),
+	('ETHTOOL_A_PODL_PSE_PW_D_STATUS', 'uint32'),
+	('ETHTOOL_A_C33_PSE_ADMIN_STATE', 'uint32'),
+	('ETHTOOL_A_C33_PSE_ADMIN_CONTROL', 'uint32'),
+	('ETHTOOL_A_C33_PSE_PW_D_STATUS', 'uint32'),
+    )
+
+    ethtoolheader = ethtoolheader
 
 class NlEthtool(GenericNetlinkSocket):
     def _do_request(self, msg, msg_flags=NLM_F_REQUEST):
@@ -288,3 +303,24 @@ class NlEthtool(GenericNetlinkSocket):
 
         self.bind(ETHTOOL_GENL_NAME, ethtool_rings_msg)
         return self._do_request(rings, msg_flags=NLM_F_REQUEST | NLM_F_ACK)
+
+    def get_pse(self, ifname=None, ifindex=None)
+        msg = ethtool_pse_psg()
+        msg["cmd"] = ETHTOOL_MSG_PSE_GET
+        msg["version"] = ETHTOOL_GENL_VERSION
+        msg["attrs"].append(
+            ('ETHTOOL_A_PSE_HEADER', self._get_dev_header(ifname, ifindex))
+        )
+
+        self.bind(ETHTOOL_GENL_NAME, ethtool_pse_msg)
+        return self._do_request(msg)
+
+    def set_pse(self, pse, ifname=None, ifindex=None)
+        pse["cmd"] = ETHTOOL_MSG_PSE_SET
+        pse["version"] = ETHTOOL_GENL_VERSION
+        pse["attrs"].append(
+            ('ETHTOOL_A_PSE_HEADER', self._get_dev_header(ifname, ifindex))
+        )
+
+        self.bind(ETHTOOL_GENL_NAME, ethtool_pse_msg)
+        return self._do_request(pse, msg_flags=NLM_F_REQUEST | NLM_F_ACK))

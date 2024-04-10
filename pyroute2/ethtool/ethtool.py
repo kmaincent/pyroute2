@@ -381,6 +381,45 @@ class EthtoolRings(
         ioctl_rings.pop("cmd")
         return cls(**ioctl_rings)
 
+#Not needed if we import pse_get and pse_set from netlink.generic
+class EthtoolPse(
+    namedtuple(
+        'EthtoolPse',
+        (
+	"podl_pse_admin_state",
+	"podl_pse_admin_control",
+	"podl_pse_pw_d_status",
+	"c33_pse_admin_state",
+	"c33_pse_admin_control",
+	"c33_pse_pw_d_status",
+        ),
+    )
+):
+    nl_attributs_dict = {
+	"podl_pse_admin_state": 'ETHTOOL_A_PODL_PSE_ADMIN_STATE',
+	"podl_pse_admin_control": 'ETHTOOL_A_PODL_PSE_ADMIN_CONTROL',
+	"podl_pse_pw_d_status": 'ETHTOOL_A_PODL_PSE_PW_D_STATUS',
+	"c33_pse_admin_state": 'ETHTOOL_A_C33_PSE_ADMIN_STATE',
+	"c33_pse_admin_control": 'ETHTOOL_A_C33_PSE_ADMIN_CONTROL',
+	"c33_pse_pw_d_status": 'ETHTOOL_A_C33_PSE_PW_D_STATUS',
+    }
+
+    def from_netlink(cls, nl_pse):
+        nl_pse = nl_pse[0]
+        return cls(
+            **{
+                cls_attr: nl_pse.get_attr(netlink_attr)
+                for cls_attr, netlink_attr in cls.nl_attributs_dict.items()
+            }
+        )
+
+    def to_netlink(self):
+        nl_pse_attrs = ethtool_pse_msg()
+        for cls_attr, netlink_attr in self.nl_attributs_dict.items():
+            attr = getattr(self, cls_attr)
+            if attr is not None:
+                nl_pse_attrs["attrs"].append((netlink_attr, attr))
+        return nl_pse_attrs
 
 class Ethtool:
     def __init__(self):
@@ -509,6 +548,24 @@ class Ethtool:
         ioctl_coalesce = self._with_ioctl.get_coalesce()
         EthtoolCoalesce.to_ioctl(ioctl_coalesce, coalesce)
         self._with_ioctl.set_coalesce(ioctl_coalesce)
+
+#Not needed if we import pse_get and pse_set from netlink.generic
+    def get_pse(self, ifname, with_netlink=None):
+        nl_working = self._is_nl_working
+        if nl_working is not True:
+            log.error("Netlink is not supported")
+
+        try
+            pse = self._with_nl.get_pse(ifname)
+            return EthtoolPse.from_netlink(wol)
+        except NetlinkError:
+            nl_working = False
+
+#Not needed if we import pse_get and pse_set from netlink.generic
+    def set_pse(self, ifname, with_netlink=None):
+        nl_working = self._is_nl_working
+        if nl_working is not True:
+            log.error("Netlink is not supported")
 
     def close(self):
         self._with_ioctl.close()
